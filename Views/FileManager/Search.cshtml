@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "Search Results";
+    var query = Context.Request.Query["q"].ToString();
+    var recursive = Context.Request.Query["recursive"].ToString() != "false";
+}
+
+<style>
+    .search-header {
+        padding: 30px;
+        border-bottom: 1px solid #eee;
+        background: #f8f9fa;
+    }
+    .search-header h2 {
+        margin: 0;
+        color: #2c3e50;
+    }
+    .search-header p {
+        margin: 10px 0 0 0;
+        color: #666;
+    }
+    
+    .search-results {
+        padding: 20px;
+    }
+    
+    .result-item {
+        padding: 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s;
+    }
+    .result-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .result-title {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+    .result-title a {
+        color: #2980b9;
+        text-decoration: none;
+    }
+    .result-title a:hover {
+        text-decoration: underline;
+    }
+    
+    .result-meta {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 8px;
+    }
+    
+    .result-snippet {
+        color: #555;
+        font-size: 14px;
+        background: #fffde7;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+    }
+    
+    .match-type {
+        display: inline-block;
+        background: #27ae60;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        margin-right: 10px;
+    }
+    
+    .tag {
+        display: inline-block;
+        background: #e8f4f8;
+        color: #2980b9;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        margin-right: 5px;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888;
+    }
+    .no-results .icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+</style>
+
+<div class="search-header">
+    <h2>🔍 Search Results</h2>
+    <p>
+        Searching for: <strong>"@query"</strong>
+        @if (recursive)
+        {
+            <span style="margin-left: 15px; color: #27ae60;">✓ Including subdirectories</span>
+        }
+        else
+        {
+            <span style="margin-left: 15px; color: #888;">Current folder only</span>
+        }
+    </p>
+</div>
+
+<div class="search-results" id="results">
+    <div class="loading">Searching...</div>
+</div>
+
+@section Scripts {
+<script>
+    const query = '@Html.Raw(query.Replace("'", "\\'"))';
+    const recursive = @(recursive ? "true" : "false");
+    
+    fetch('/FileManager/SearchApi?q=' + encodeURIComponent(query) + '&recursive=' + recursive)
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('results');
+            
+            if (!data.success) {
+                container.innerHTML = '<div class="no-results"><div class="icon">⚠️</div><p>' + data.message + '</p></div>';
+                return;
+            }
+            
+            if (data.results.length === 0) {
+                container.innerHTML = '<div class="no-results"><div class="icon">🔍</div><p>No results found for "' + query + '"</p></div>';
+                return;
+            }
+            
+            let html = '';
+            data.results.forEach(r => {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">
+                            <span class="match-type">${r.matchType}</span>
+                            <a href="/FileManager/View/${r.filePath}">${r.title || r.fileName}</a>
+                        </div>
+                        <div class="result-meta">
+                            📄 ${r.fileName}
+                            ${r.id ? ' • 🔖 ' + r.id : ''}
+                            • ${new Date(r.lastModified).toLocaleDateString()}
+                        </div>
+                        ${r.tags && r.tags.length ? '<div>' + r.tags.map(t => '<span class="tag">#' + t + '</span>').join('') + '</div>' : ''}
+                        ${r.snippet ? '<div class="result-snippet">' + r.snippet + '</div>' : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        })
+        .catch(err => {
+            document.getElementById('results').innerHTML = '<div class="no-results"><div class="icon">⚠️</div><p>Error: ' + err.message + '</p></div>';
+        });
+</script>
+}

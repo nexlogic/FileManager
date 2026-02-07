@@ -1,0 +1,200 @@
+@model MarkdownViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<style>
+    .article-header {
+        padding: 30px;
+        border-bottom: 1px solid #eee;
+        background: #f8f9fa;
+    }
+    .article-header h1 {
+        margin: 0 0 10px 0;
+        color: #2c3e50;
+    }
+    .article-meta {
+        color: #666;
+        font-size: 14px;
+    }
+    .article-meta span {
+        margin-right: 20px;
+    }
+    .article-tags {
+        margin-top: 15px;
+    }
+    .tag {
+        display: inline-block;
+        background: #3498db;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        margin-right: 8px;
+    }
+    
+    .article-actions {
+        float: right;
+    }
+    
+    .article-content {
+        padding: 30px;
+        line-height: 1.8;
+    }
+    .article-content h1, 
+    .article-content h2, 
+    .article-content h3 {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+    .article-content h1 { font-size: 2em; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    .article-content h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    .article-content h3 { font-size: 1.25em; }
+    
+    .article-content p {
+        margin-bottom: 15px;
+    }
+    
+    .article-content code {
+        background: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 0.9em;
+    }
+    
+    .article-content pre {
+        background: #2d2d2d;
+        color: #f8f8f2;
+        padding: 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 20px 0;
+    }
+    .article-content pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+    }
+    
+    .article-content blockquote {
+        border-left: 4px solid #3498db;
+        margin: 20px 0;
+        padding: 10px 20px;
+        background: #f8f9fa;
+        color: #555;
+    }
+    
+    .article-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    .article-content th,
+    .article-content td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+    .article-content th {
+        background: #f4f4f4;
+        font-weight: 600;
+    }
+    .article-content tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+    
+    .article-content ul,
+    .article-content ol {
+        margin: 15px 0;
+        padding-left: 30px;
+    }
+    .article-content li {
+        margin-bottom: 8px;
+    }
+    
+    .article-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
+    
+    .article-content a {
+        color: #3498db;
+    }
+    
+    .article-content hr {
+        border: none;
+        border-top: 1px solid #eee;
+        margin: 30px 0;
+    }
+    
+    /* Task lists */
+    .article-content input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+    @@media print {
+        .article-actions, header, .search-box { display: none !important; }
+        .article-content { padding: 0; }
+        body { background: white; }
+        main { box-shadow: none; }
+    }
+</style>
+
+<div class="article-header">
+    <div class="article-actions">
+        <a href="/FileManager/Raw/@Model.FilePath" class="btn btn-secondary">📄 Raw</a>
+        <a href="/FileManager/Download/@Model.FilePath" class="btn btn-primary">⬇️ Download</a>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+    </div>
+    
+    <h1>@Model.Title</h1>
+    
+    <div class="article-meta">
+        @if (!string.IsNullOrEmpty(Model.Id))
+        {
+            <span>🔖 ID: @Model.Id</span>
+        }
+        @if (!string.IsNullOrEmpty(Model.Author))
+        {
+            <span>✍️ @Model.Author</span>
+        }
+        @if (!string.IsNullOrEmpty(Model.Date))
+        {
+            <span>📅 @Model.Date</span>
+        }
+    </div>
+    
+    @if (Model.Tags.Any())
+    {
+        <div class="article-tags">
+            @foreach (var tag in Model.Tags)
+            {
+                <span class="tag">#@tag</span>
+            }
+        </div>
+    }
+</div>
+
+<article class="article-content">
+    @Html.Raw(Model.HtmlContent)
+</article>
+
+@if (Model.Metadata.Any())
+{
+    <details style="padding: 20px; border-top: 1px solid #eee;">
+        <summary style="cursor: pointer; color: #666;">📋 All Metadata</summary>
+        <table style="margin-top: 15px; width: auto;">
+            @foreach (var kv in Model.Metadata)
+            {
+                <tr>
+                    <td style="padding: 5px 15px 5px 0; font-weight: 500;">@kv.Key</td>
+                    <td style="padding: 5px 0;">@kv.Value</td>
+                </tr>
+            }
+        </table>
+    </details>
+}

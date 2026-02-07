@@ -1,0 +1,370 @@
+@model FileManagerViewModel
+@{
+    ViewData["Title"] = "Files";
+}
+
+<style>
+    .toolbar {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .breadcrumb-nav {
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+    }
+    .breadcrumb-nav a { color: #3498db; text-decoration: none; }
+    .breadcrumb-nav a:hover { text-decoration: underline; }
+    .breadcrumb-nav span { color: #666; margin: 0 5px; }
+    
+    .file-list { padding: 0; }
+    
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s;
+    }
+    .file-item:hover { background: #f8f9fa; }
+    
+    .file-icon { font-size: 24px; margin-right: 15px; }
+    
+    .file-info { flex: 1; }
+    .file-name { font-weight: 500; color: #333; }
+    .file-name a { color: #333; text-decoration: none; }
+    .file-name a:hover { color: #3498db; }
+    .file-meta { font-size: 12px; color: #888; margin-top: 3px; }
+    .file-tags { margin-top: 5px; }
+    .tag {
+        display: inline-block;
+        background: #e8f4f8;
+        color: #2980b9;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        margin-right: 5px;
+    }
+    
+    .file-actions {
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .file-item:hover .file-actions { opacity: 1; }
+    
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    
+    /* Upload area */
+    .upload-area {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        margin: 20px;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .upload-area:hover, .upload-area.dragover {
+        border-color: #3498db;
+        background: #f0f8ff;
+    }
+    .upload-area input { display: none; }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #888;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+</style>
+
+<div class="breadcrumb-nav">
+    <a href="/FileManager">📁 Home</a>
+    @if (!string.IsNullOrEmpty(Model.CurrentPath))
+    {
+        var parts = Model.CurrentPath.Split('/');
+        var path = "";
+        foreach (var part in parts)
+        {
+            path = string.IsNullOrEmpty(path) ? part : $"{path}/{part}";
+            <span>/</span>
+            <a href="/FileManager/Index/@path">@part</a>
+        }
+    }
+</div>
+
+<div class="toolbar">
+    <button class="btn btn-success" onclick="showUploadModal()">📤 Upload</button>
+    <button class="btn btn-primary" onclick="showNewFolderModal()">📁 New Folder</button>
+    @if (!string.IsNullOrEmpty(Model.ParentPath))
+    {
+        <a href="/FileManager/Index/@Model.ParentPath" class="btn btn-secondary">⬆️ Up</a>
+    }
+    else if (!string.IsNullOrEmpty(Model.CurrentPath))
+    {
+        <a href="/FileManager" class="btn btn-secondary">⬆️ Up</a>
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div style="padding: 20px; background: #fee; color: #c00;">
+        ⚠️ @Model.ErrorMessage
+    </div>
+}
+
+<div class="file-list">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="icon">📂</div>
+            <p>This folder is empty</p>
+            <p style="font-size: 14px;">Drop files here or click Upload</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Model.Items)
+        {
+            <div class="file-item" data-path="@item.Path" data-name="@item.Name" data-isdir="@item.IsDirectory.ToString().ToLower()">
+                <span class="file-icon">@item.Icon</span>
+                <div class="file-info">
+                    <div class="file-name">
+                        @if (item.IsDirectory)
+                        {
+                            <a href="/FileManager/Index/@item.Path">@item.Name</a>
+                        }
+                        else if (item.Extension?.ToLower() == ".md")
+                        {
+                            <a href="/FileManager/View/@item.Path">
+                                @(item.Title ?? item.Name)
+                            </a>
+                            @if (!string.IsNullOrEmpty(item.Id))
+                            {
+                                <span style="color: #888; font-size: 12px; margin-left: 8px;">[@item.Id]</span>
+                            }
+                        }
+                        else
+                        {
+                            <a href="/FileManager/Download/@item.Path">@item.Name</a>
+                        }
+                    </div>
+                    <div class="file-meta">
+                        @item.FormattedSize • @item.LastModified.ToString("yyyy-MM-dd HH:mm")
+                        @if (!string.IsNullOrEmpty(item.Author))
+                        {
+                            <span>• @item.Author</span>
+                        }
+                    </div>
+                    @if (item.Tags.Any())
+                    {
+                        <div class="file-tags">
+                            @foreach (var tag in item.Tags.Take(5))
+                            {
+                                <span class="tag">#@tag</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="file-actions">
+                    @if (!item.IsDirectory && item.Extension?.ToLower() == ".md")
+                    {
+                        <a href="/FileManager/Raw/@item.Path" class="btn btn-secondary btn-sm">Raw</a>
+                    }
+                    <a href="/FileManager/Download/@item.Path" class="btn btn-primary btn-sm">⬇️</a>
+                    <button class="btn btn-secondary btn-sm" onclick="renameItem('@item.Path', '@item.Name')">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteItem('@item.Path', @item.IsDirectory.ToString().ToLower())">🗑️</button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Upload Modal -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content" style="min-width: 500px;">
+        <h3>📤 Upload Files</h3>
+        <div class="upload-area" id="dropArea" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 48px;">📁</div>
+            <p>Drag & drop files here or click to browse</p>
+            <input type="file" id="fileInput" multiple />
+        </div>
+        <div id="uploadProgress" style="display: none; margin-top: 15px;">
+            <div style="background: #eee; border-radius: 4px; overflow: hidden;">
+                <div id="progressBar" style="height: 20px; background: #3498db; width: 0%; transition: width 0.3s;"></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="hideModal('uploadModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- New Folder Modal -->
+<div class="modal" id="folderModal">
+    <div class="modal-content">
+        <h3>📁 New Folder</h3>
+        <input type="text" id="folderName" placeholder="Folder name" />
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="hideModal('folderModal')">Cancel</button>
+            <button class="btn btn-success" onclick="createFolder()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal" id="renameModal">
+    <div class="modal-content">
+        <h3>✏️ Rename</h3>
+        <input type="hidden" id="renamePath" />
+        <input type="text" id="newName" placeholder="New name" />
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="hideModal('renameModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="doRename()">Rename</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const currentPath = '@Model.CurrentPath';
+    
+    function showModal(id) { document.getElementById(id).classList.add('show'); }
+    function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+    
+    function showUploadModal() { showModal('uploadModal'); }
+    function showNewFolderModal() { 
+        showModal('folderModal'); 
+        document.getElementById('folderName').focus();
+    }
+    
+    // Upload handling
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+        dropArea.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+    });
+    dropArea.addEventListener('dragover', () => dropArea.classList.add('dragover'));
+    dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+    dropArea.addEventListener('drop', e => {
+        dropArea.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+    
+    function handleFiles(files) {
+        if (files.length === 0) return;
+        
+        const formData = new FormData();
+        formData.append('path', currentPath);
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+        
+        document.getElementById('uploadProgress').style.display = 'block';
+        const progressBar = document.getElementById('progressBar');
+        
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable) {
+                progressBar.style.width = (e.loaded / e.total * 100) + '%';
+            }
+        };
+        xhr.onload = () => {
+            const resp = JSON.parse(xhr.responseText);
+            if (resp.success) {
+                showToast(resp.message);
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast(resp.message, 'error');
+            }
+            hideModal('uploadModal');
+        };
+        xhr.open('POST', '/FileManager/Upload');
+        xhr.send(formData);
+    }
+    
+    function createFolder() {
+        const name = document.getElementById('folderName').value.trim();
+        if (!name) return;
+        
+        fetch('/FileManager/CreateFolder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `path=${encodeURIComponent(currentPath)}&name=${encodeURIComponent(name)}`
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                showToast('Folder created');
+                location.reload();
+            } else {
+                showToast(resp.message, 'error');
+            }
+        });
+    }
+    
+    function renameItem(path, name) {
+        document.getElementById('renamePath').value = path;
+        document.getElementById('newName').value = name;
+        showModal('renameModal');
+        document.getElementById('newName').focus();
+    }
+    
+    function doRename() {
+        const path = document.getElementById('renamePath').value;
+        const newName = document.getElementById('newName').value.trim();
+        if (!newName) return;
+        
+        fetch('/FileManager/Rename', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `path=${encodeURIComponent(path)}&newName=${encodeURIComponent(newName)}`
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                showToast('Renamed successfully');
+                location.reload();
+            } else {
+                showToast(resp.message, 'error');
+            }
+        });
+    }
+    
+    function deleteItem(path, isDir) {
+        if (!confirm('Delete this ' + (isDir ? 'folder' : 'file') + '?')) return;
+        
+        fetch('/FileManager/Delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `path=${encodeURIComponent(path)}&isDirectory=${isDir}`
+        })
+        .then(r => r.json())
+        .then(resp => {
+            if (resp.success) {
+                showToast('Deleted');
+                location.reload();
+            } else {
+                showToast(resp.message, 'error');
+            }
+        });
+    }
+    
+    // Enter key handlers
+    document.getElementById('folderName').addEventListener('keypress', e => {
+        if (e.key === 'Enter') createFolder();
+    });
+    document.getElementById('newName').addEventListener('keypress', e => {
+        if (e.key === 'Enter') doRename();
+    });
+</script>
+}
