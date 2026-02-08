@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "60VAEqLyIU0=",
+  "success": true,
+  "projectFilePath": "/Volumes/develop/working/FileManager/FileManager.csproj",
+  "expectedPackageFiles": [
+    "/Users/pson/.nuget/packages/markdig/0.34.0/markdig.0.34.0.nupkg.sha512"
+  ],
+  "logs": []
+}

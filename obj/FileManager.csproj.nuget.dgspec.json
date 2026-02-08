@@ -1,0 +1,75 @@
+{
+  "format": 1,
+  "restore": {
+    "/Volumes/develop/working/FileManager/FileManager.csproj": {}
+  },
+  "projects": {
+    "/Volumes/develop/working/FileManager/FileManager.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Volumes/develop/working/FileManager/FileManager.csproj",
+        "projectName": "FileManager",
+        "projectPath": "/Volumes/develop/working/FileManager/FileManager.csproj",
+        "packagesPath": "/Users/pson/.nuget/packages/",
+        "outputPath": "/Volumes/develop/working/FileManager/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/pson/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Markdig": {
+              "target": "Package",
+              "version": "[0.34.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.417/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
